@@ -14,3 +14,7 @@ def get_users():
 @app.post("/users")
 def create_user():
     return {"id": 2, "name": "New User"}
+
+@app.get("/hello/{name}")
+def say_hello(name: str):
+    return {"message": f"Hello {name}!"}
