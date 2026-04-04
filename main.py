@@ -41,3 +41,19 @@ def update_user(user_id: int, name: str):
 @app.get("/hello/{name}")
 def say_hello(name: str):
     return {"message": f"Hello {name}!"}
+
+# DELETE user
+@app.delete("/users/{user_id}")
+def delete_user(user_id: int):
+    for user in users_db:
+        if user["id"] == user_id:
+            users_db.remove(user)
+            return {"message": "User deleted"}
+    raise HTTPException(status_code=404, detail="User not found")
+
+
+# SEARCH users by name
+@app.get("/search")
+def search_users(name: str = Query(...)):
+    results = [user for user in users_db if name.lower() in user["name"].lower()]
+    return {"results": results}
