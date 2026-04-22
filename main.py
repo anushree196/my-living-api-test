@@ -1,59 +1,99 @@
-
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
+from typing import List
 
 app = FastAPI()
 
-# Dummy in-memory data
-users_db = [
-    {"id": 1, "name": "Anu"},
-    {"id": 2, "name": "New User"}
+# -------------------------
+# 📦 Pydantic Models
+# -------------------------
+
+class User(BaseModel):
+    id: int
+    name: str
+
+class UserCreate(BaseModel):
+    name: str
+
+class UserUpdate(BaseModel):
+    name: str
+
+
+# -------------------------
+# 🗂️ In-memory DB
+# -------------------------
+
+users_db: List[User] = [
+    User(id=1, name="Anu"),
+    User(id=2, name="New User")
 ]
+
+
+# -------------------------
+# 🌐 Routes
+# -------------------------
 
 @app.get("/")
 def read_root():
     return {"message": "Hello World"}
 
-@app.get("/users")
+
+# GET all users
+@app.get("/users", response_model=List[User])
 def get_users():
     return users_db
 
-@app.post("/users")
-def create_user():
-    new_user = {"id": len(users_db) + 1, "name": "New User"}
+
+# POST create user (PROPER BODY)
+@app.post("/users", response_model=User)
+def create_user(user: UserCreate):
+    new_user = User(
+        id=len(users_db) + 1,
+        name=user.name
+    )
     users_db.append(new_user)
     return new_user
 
-@app.get("/users/{user_id}")
+
+# GET user by ID
+@app.get("/users/{user_id}", response_model=User)
 def get_user_by_id(user_id: int):
     for user in users_db:
-        if user["id"] == user_id:
+        if user.id == user_id:
             return user
     raise HTTPException(status_code=404, detail="User not found")
 
-@app.put("/users/{user_id}")
-def update_user(user_id: int, name: str):
+
+# PUT update user (BODY instead of query)
+@app.put("/users/{user_id}", response_model=User)
+def update_user(user_id: int, updated_data: UserUpdate):
     for user in users_db:
-        if user["id"] == user_id:
-            user["name"] = name
-            return {"message": "User updated", "user": user}
+        if user.id == user_id:
+            user.name = updated_data.name
+            return user
     raise HTTPException(status_code=404, detail="User not found")
 
-@app.get("/hello/{name}")
-def say_hello(name: str):
-    return {"message": f"Hello {name}!"}
 
 # DELETE user
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int):
     for user in users_db:
-        if user["id"] == user_id:
+        if user.id == user_id:
             users_db.remove(user)
             return {"message": "User deleted"}
     raise HTTPException(status_code=404, detail="User not found")
 
 
-# SEARCH users by name
-@app.get("/search")
+# SEARCH users
+@app.get("/search", response_model=List[User])
 def search_users(name: str = Query(...)):
-    results = [user for user in users_db if name.lower() in user["name"].lower()]
-    return {"results": results}
+    return [
+        user for user in users_db
+        if name.lower() in user.name.lower()
+    ]
+
+
+
+        reverse=(order == "desc")
+    )
+    return sorted_users
